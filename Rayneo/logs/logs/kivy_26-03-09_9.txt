@@ -1,0 +1,127 @@
+[INFO   ] Logger: Record log in X:\Rayneo\logs\logs\kivy_26-03-09_9.txt
+[INFO   ] deps: Successfully imported "kivy_deps.angle" 0.4.0
+[INFO   ] deps: Successfully imported "kivy_deps.glew" 0.3.1
+[INFO   ] deps: Successfully imported "kivy_deps.sdl2" 0.8.0
+[INFO   ] Kivy: v2.3.1
+[INFO   ] Kivy: Installed at "C:\Users\Pietr\AppData\Local\Programs\Python\Python312\Lib\site-packages\kivy\__init__.py"
+[INFO   ] Python: v3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]
+[INFO   ] Python: Interpreter at "C:\Users\Pietr\AppData\Local\Programs\Python\Python312\python.exe"
+[INFO   ] Logger: Purge log fired. Processing...
+[INFO   ] Logger: Purge finished!
+[INFO   ] Factory: 195 symbols loaded
+[INFO   ] Image: Providers: img_tex, img_dds, img_sdl2 (img_pil, img_ffpyplayer ignored)
+[INFO   ] Text: Provider: sdl2
+[INFO   ] Window: Provider: sdl2
+[INFO   ] GL: Using the "OpenGL" graphics system
+[INFO   ] GL: GLEW initialization succeeded
+[INFO   ] GL: Backend used <glew>
+[INFO   ] GL: OpenGL version <b'4.6.0 Compatibility Profile Context 26.2.2.260218'>
+[INFO   ] GL: OpenGL vendor <b'ATI Technologies Inc.'>
+[INFO   ] GL: OpenGL renderer <b'AMD Radeon RX 6700 XT'>
+[INFO   ] GL: OpenGL parsed version: 4, 6
+[INFO   ] GL: Shading version <b'4.60'>
+[INFO   ] GL: Texture max size <16384>
+[INFO   ] GL: Texture max units <32>
+[INFO   ] Window: auto add sdl2 input provider
+[INFO   ] Window: virtual keyboard not allowed, single mode, not docked
+[INFO   ] GL: NPOT texture support is available
+[INFO   ] Base: Start application main loop
+[DEBUG  ] Using proactor: IocpProactor
+[DEBUG  ] Using proactor: IocpProactor
+[DEBUG  ] Starting new HTTPS connection (1): identify-eu-west-1.acrcloud.com:443
+[DEBUG  ] Attempt 1 out of 20
+[DEBUG  ] Sending HTTP request
+[DEBUG  ] Attempt 1 out of 20
+[DEBUG  ] Sending HTTP request
+[DEBUG  ] https://identify-eu-west-1.acrcloud.com:443 "POST /v1/identify HTTP/1.1" 200 None
+[DEBUG  ] https://identify-eu-west-1.acrcloud.com:443 "POST /v1/identify HTTP/1.1" 200 None
+[DEBUG  ] Starting new HTTPS connection (1): lrclib.net:443
+[DEBUG  ] https://lrclib.net:443 "GET /api/search?q=SI+NO+ES+CONTIGO+Cris+Mj HTTP/1.1" 200 None
+[DEBUG  ] Using proactor: IocpProactor
+[DEBUG  ] Using proactor: IocpProactor
+[DEBUG  ] Attempt 1 out of 20
+[DEBUG  ] Sending HTTP request
+[DEBUG  ] Attempt 1 out of 20
+[DEBUG  ] Sending HTTP request
+[DEBUG  ] https://identify-eu-west-1.acrcloud.com:443 "POST /v1/identify HTTP/1.1" 200 None
+[DEBUG  ] https://identify-eu-west-1.acrcloud.com:443 "POST /v1/identify HTTP/1.1" 200 None
+[DEBUG  ] https://lrclib.net:443 "GET /api/search?q=SI+NO+ES+CONTIGO+Cris+Mj HTTP/1.1" 200 None
+[DEBUG  ] Starting new HTTPS connection (1): api.groq.com:443
+[DEBUG  ] Starting new HTTPS connection (2): api.groq.com:443
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[DEBUG  ] https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+[INFO   ] Base: Leaving application in progress...

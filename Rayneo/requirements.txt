@@ -1,0 +1,8 @@
+kivy==2.3.1
+numpy
+scipy
+sounddevice
+requests
+thefuzz
+python-Levenshtein
+shazamio

@@ -1,0 +1,127 @@
+2026-03-09 21:59:55,334 | INFO     | deps: Successfully imported "kivy_deps.angle" 0.4.0
+2026-03-09 21:59:55,335 | INFO     | Logger: Record log in X:\Rayneo\logs\logs\kivy_26-03-09_9.txt
+2026-03-09 21:59:55,336 | INFO     | deps: Successfully imported "kivy_deps.glew" 0.3.1
+2026-03-09 21:59:55,336 | INFO     | deps: Successfully imported "kivy_deps.sdl2" 0.8.0
+2026-03-09 21:59:55,336 | INFO     | Kivy: v2.3.1
+2026-03-09 21:59:55,336 | INFO     | Kivy: Installed at "C:\Users\Pietr\AppData\Local\Programs\Python\Python312\Lib\site-packages\kivy\__init__.py"
+2026-03-09 21:59:55,336 | INFO     | Python: v3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]
+2026-03-09 21:59:55,336 | INFO     | Python: Interpreter at "C:\Users\Pietr\AppData\Local\Programs\Python\Python312\python.exe"
+2026-03-09 21:59:55,337 | INFO     | Logger: Purge log fired. Processing...
+2026-03-09 21:59:55,339 | INFO     | Logger: Purge finished!
+2026-03-09 21:59:55,347 | INFO     | Factory: 195 symbols loaded
+2026-03-09 21:59:55,398 | INFO     | Image: Providers: img_tex, img_dds, img_sdl2 (img_pil, img_ffpyplayer ignored)
+2026-03-09 21:59:55,409 | INFO     | Text: Provider: sdl2
+2026-03-09 21:59:55,426 | INFO     | Window: Provider: sdl2
+2026-03-09 22:00:25,641 | INFO     | GL: Using the "OpenGL" graphics system
+2026-03-09 22:00:25,651 | INFO     | GL: GLEW initialization succeeded
+2026-03-09 22:00:25,651 | INFO     | GL: Backend used <glew>
+2026-03-09 22:00:25,651 | INFO     | GL: OpenGL version <b'4.6.0 Compatibility Profile Context 26.2.2.260218'>
+2026-03-09 22:00:25,651 | INFO     | GL: OpenGL vendor <b'ATI Technologies Inc.'>
+2026-03-09 22:00:25,651 | INFO     | GL: OpenGL renderer <b'AMD Radeon RX 6700 XT'>
+2026-03-09 22:00:25,651 | INFO     | GL: OpenGL parsed version: 4, 6
+2026-03-09 22:00:25,651 | INFO     | GL: Shading version <b'4.60'>
+2026-03-09 22:00:25,651 | INFO     | GL: Texture max size <16384>
+2026-03-09 22:00:25,651 | INFO     | GL: Texture max units <32>
+2026-03-09 22:00:25,679 | INFO     | Window: auto add sdl2 input provider
+2026-03-09 22:00:25,680 | INFO     | Window: virtual keyboard not allowed, single mode, not docked
+2026-03-09 22:00:25,698 | INFO     | GL: NPOT texture support is available
+2026-03-09 22:00:25,700 | INFO     | Base: Start application main loop
+2026-03-09 22:00:31,304 | DEBUG    | Using proactor: IocpProactor
+2026-03-09 22:00:31,305 | DEBUG    | Using proactor: IocpProactor
+2026-03-09 22:00:31,306 | DEBUG    | Starting new HTTPS connection (1): identify-eu-west-1.acrcloud.com:443
+2026-03-09 22:00:31,313 | DEBUG    | Attempt 1 out of 20
+2026-03-09 22:00:31,314 | DEBUG    | Sending HTTP request
+2026-03-09 22:00:31,316 | DEBUG    | Attempt 1 out of 20
+2026-03-09 22:00:31,317 | DEBUG    | Sending HTTP request
+2026-03-09 22:00:32,073 | DEBUG    | https://identify-eu-west-1.acrcloud.com:443 "POST /v1/identify HTTP/1.1" 200 None
+2026-03-09 22:00:41,697 | DEBUG    | https://identify-eu-west-1.acrcloud.com:443 "POST /v1/identify HTTP/1.1" 200 None
+2026-03-09 22:00:41,698 | DEBUG    | Starting new HTTPS connection (1): lrclib.net:443
+2026-03-09 22:00:42,373 | DEBUG    | https://lrclib.net:443 "GET /api/search?q=SI+NO+ES+CONTIGO+Cris+Mj HTTP/1.1" 200 None
+2026-03-09 22:00:45,471 | DEBUG    | Using proactor: IocpProactor
+2026-03-09 22:00:45,471 | DEBUG    | Using proactor: IocpProactor
+2026-03-09 22:00:45,479 | DEBUG    | Attempt 1 out of 20
+2026-03-09 22:00:45,479 | DEBUG    | Sending HTTP request
+2026-03-09 22:00:45,482 | DEBUG    | Attempt 1 out of 20
+2026-03-09 22:00:45,482 | DEBUG    | Sending HTTP request
+2026-03-09 22:00:45,780 | DEBUG    | https://identify-eu-west-1.acrcloud.com:443 "POST /v1/identify HTTP/1.1" 200 None
+2026-03-09 22:00:55,929 | DEBUG    | https://identify-eu-west-1.acrcloud.com:443 "POST /v1/identify HTTP/1.1" 200 None
+2026-03-09 22:00:56,285 | DEBUG    | https://lrclib.net:443 "GET /api/search?q=SI+NO+ES+CONTIGO+Cris+Mj HTTP/1.1" 200 None
+2026-03-09 22:01:00,310 | DEBUG    | Starting new HTTPS connection (1): api.groq.com:443
+2026-03-09 22:01:00,663 | DEBUG    | Starting new HTTPS connection (2): api.groq.com:443
+2026-03-09 22:01:00,899 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:01,151 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:01,234 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:01,593 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:02,018 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:02,410 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:02,645 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:02,992 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:03,349 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:03,712 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:04,054 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:04,401 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:04,748 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:05,125 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:05,512 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:05,821 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:06,179 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:06,516 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:06,898 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:07,423 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:07,736 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:07,787 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:08,119 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:08,489 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:08,839 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:09,175 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:09,527 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:09,886 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:10,383 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:10,584 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:10,942 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:11,289 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:11,639 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:11,993 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:12,345 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:12,702 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:13,048 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:13,563 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:13,765 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:14,103 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:14,466 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:14,815 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:15,159 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:15,520 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:15,865 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:16,232 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:16,922 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:16,968 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:17,275 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:17,625 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:17,979 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:18,329 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:18,687 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:19,033 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:19,385 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:19,961 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:20,087 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:20,449 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:20,795 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:21,154 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:21,497 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:21,848 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:22,200 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:22,561 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:23,073 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:23,254 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:23,612 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:23,960 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:24,327 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:24,668 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:25,022 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:25,377 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:25,723 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:26,240 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 200 None
+2026-03-09 22:01:26,435 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:01:26,786 | DEBUG    | https://api.groq.com:443 "POST /openai/v1/audio/transcriptions HTTP/1.1" 429 374
+2026-03-09 22:02:19,172 | INFO     | Base: Leaving application in progress...

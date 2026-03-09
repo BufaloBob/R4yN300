@@ -1,0 +1,29 @@
+CRASH REPORT - 2026-03-07 18:15:44.169057
+============================================================
+Tipo: KeyboardInterrupt
+Messaggio: 
+
+TRACEBACK:
+Traceback (most recent call last):
+  File "X:\Rayneo\main.py", line 1464, in <module>
+    RayNeoTestApp().run()
+  File "C:\Users\Pietr\AppData\Local\Programs\Python\Python312\Lib\site-packages\kivy\app.py", line 956, in run
+    runTouchApp()
+  File "C:\Users\Pietr\AppData\Local\Programs\Python\Python312\Lib\site-packages\kivy\base.py", line 574, in runTouchApp
+    EventLoop.mainloop()
+  File "C:\Users\Pietr\AppData\Local\Programs\Python\Python312\Lib\site-packages\kivy\base.py", line 339, in mainloop
+    self.idle()
+  File "C:\Users\Pietr\AppData\Local\Programs\Python\Python312\Lib\site-packages\kivy\base.py", line 379, in idle
+    Clock.tick()
+  File "C:\Users\Pietr\AppData\Local\Programs\Python\Python312\Lib\site-packages\kivy\clock.py", line 733, in tick
+    self.post_idle(ts, self.idle())
+                       ^^^^^^^^^^^
+  File "C:\Users\Pietr\AppData\Local\Programs\Python\Python312\Lib\site-packages\kivy\clock.py", line 689, in idle
+    usleep(1000000 * sleeptime)
+  File "C:\Users\Pietr\AppData\Local\Programs\Python\Python312\Lib\site-packages\kivy\clock.py", line 965, in usleep
+    _usleep(microseconds, self._sleep_obj)
+  File "C:\Users\Pietr\AppData\Local\Programs\Python\Python312\Lib\site-packages\kivy\clock.py", line 504, in _usleep
+    _kernel32.WaitForSingleObject(obj, 0xffffffff)
+KeyboardInterrupt
+
+Python: 3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]

@@ -1,0 +1,38 @@
+<RayNeoRoot>:
+    orientation: 'vertical'
+    padding: 20
+    canvas.before:
+        Color:
+            rgba: 0, 0, 0, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    BoxLayout:
+        size_hint_y: 0.1
+        spacing: 10
+        TextInput:
+            id: search_input
+            text: "Albachiara"
+            multiline: False
+        Button:
+            text: "CERCA"
+            size_hint_x: 0.3
+            on_press: app.search_song(search_input.text)
+
+    Label:
+        id: main_lyric
+        text: "RayNeo Test\nVersione ACR Completa"
+        font_size: '45sp'
+        halign: 'center'
+        color: 0, 1, 0, 1
+
+    BoxLayout:
+        size_hint_y: 0.15
+        Label:
+            id: status_label
+            text: "Pronto"
+        Button:
+            text: "🎤 SYNC"
+            size_hint_x: 0.4
+            on_press: app.start_ai_sync()
