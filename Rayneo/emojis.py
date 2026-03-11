@@ -1,7 +1,10 @@
 import re
 import os
 import requests
+import unicodedata
 from functools import lru_cache
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 EMOJI_DICT = {
     # ── AMORE / ROMANTICISMO ──
@@ -9,7 +12,7 @@ EMOJI_DICT = {
     "💖": ["anhelo", "anhelar", "te anhelo"],
     "❤️‍🔥": ["pasion", "loco por ti", "loca por ti", "obsesion", "obsesionado", "no te puedo olvidar", "me tienes loco", "me tienes loca", "fuego en el alma", "ardiendo por ti", "deseo loco"],
     "💔": ["Tú me rompiste el corazón","rompo corazone'""rota", "roto", "desamor", "ex", "toxic", "toxica", "toxico", "dolor de amor", "herida", "traicion amor", "mentira","mentira'", "engaño", "me fallo", "me falla", "te bote", "Te Boté", "te fuiste", "ya no estas", "me dejo", "me deja", "olvidame", "no te merecia", "dolor"],
-    "💋": ["beso", "besos", "besito", "besitos", "labios", "boca", "muah", "mwah", "muack", "smack", "chu", "chuu", "besar", "besame", "bésame", "dame un beso", "labios", "kiss", "kisses", "kissing"],
+    "💋": ["beso", "besos", "besito", "besitos", "besarte","labios", "boca", "muah", "mwah", "muack", "smack", "chu", "chuu", "besar", "besame", "bésame", "dame un beso", "labios", "kiss", "kisses", "kissing"],
     "🫦": ["clavé","agarra'","Sé que quieres", "comer", "comemos", "comerte","comersela","chocan", "choca", "freaky", "friki", "sexy", "sex", "sensual", "tentacion", "provocar", "bellaqueo", "superbellaca", "bellaca", "bellaco", "ganas", "caliente de ganas", "cosa rica", "cosas malas", "picante", "safaera", "guarachar", "guaracha", "morder", "labio", "cachonda"],
     "💑": ["pareja", "juntos", "contigo", "nuestra relacion", "tu y yo", "somos nosotros", "mios", "tuyo", "nuestra", "relacion"],
     "🫂": ["abrazo", "abrazame", "cerca de ti", "junto a ti"],
@@ -31,7 +34,7 @@ EMOJI_DICT = {
     "🌿": ["yerba", "yelba", "mary", "maria", "marihuana", "pasto", "blunt", "blunts", "porro", "mota", "kush", "zaza", "hierba", "weed", "ganja", "420", "fumamos"],
     "💨": ["vapor", "fuma", "fumo", "fumando", "humo", "smoke", "smoking", "vape", "vapeo", "hookah", "pipa", "exhala", "gas", "nube humo", "bonga"],
     "🟣": ["lean", "codeina", "codeine", "jarabe", "syrup", "tuss", "morado", "actavis", "promethazine", "purp", "purple drank"],
-    "💊": ["pastilla", "perco", "percocet", "molly", "mdma", "xan", "xanax", "tusi", "tussi", "pepa", "droga", "elevado", "elevada", "dosis", "oxy", "perco 30"],
+    "💊": ["Plan B", "pastilla", "perco", "percocet", "molly", "mdma", "xan", "xanax", "tusi", "tussi", "pepa", "droga", "elevado", "elevada", "dosis", "oxy", "perco 30"],
     "🚬": ["cigarro", "cigarrillo", "tabaco", "swisher", "ceniza"],
     # ── EMOZIONI / ESPRESSIONI ──
     "🔥": ["fuego", "candela", "quema", "ardiente", "llamas", "fire", "hot", "prendido", "tremendo", "brutal", "duro", "dura", "heavy", "bestial", "lo maximo", "caliente", "encendido", "calor"],
@@ -66,7 +69,7 @@ EMOJI_DICT = {
     "😇": ["angel", "pura", "puro", "inocente", "santa", "santo", "buena gente", "sin maldad", "limpia", "limpio", "bueno", "buena", "portarse bien", "juiciosa", "juicioso"],
     # ── STATUS / POTERE / SUCCESSO ──
     "👑": ["rey", "reina", "jefe", "jefa", "patron", "capo", "corona", "lider", "dueño", "dueña", "manda", "empire", "imperio", "cangri", "el mas duro", "la mas dura", "numero uno", "el jefe", "la jefa", "big boss", "poder"],
-    "💅": ["chicha", "bichota", "diva", "reina mia", "potra", "independiente", "fina", "carisima", "arreglada", "maquillaje", "unas", "bella", "hermosa", "bonita", "linda", "guapa", "mujer poderosa", "empoderamiento", "self love", "me amo", "me quiero", "nena fina", "nena' fina"],
+    "💅": ["chicha'", "bichota", "diva", "reina mia", "potra", "independiente", "fina", "carisima", "arreglada", "maquillaje", "unas", "bella", "hermosa", "bonita", "linda", "guapa", "mujer poderosa", "empoderamiento", "self love", "me amo", "me quiero", "nena fina", "nena' fina"],
     "🏆": ["campeon", "campeonas", "trofeo", "ganador", "ganar", "gano", "victoria", "vencedor", "titulo", "el mejor", "la mejor", "goat", "leyenda", "legendary", "historico", "premio"],
     "🐐": ["cabra", "greatest", "mejor de todos", "ninguno como yo", "imbatible", "invicto", "sin rival", "mejor"],
     "🎖️": ["medalla", "honor", "merecido", "logro", "consegui"],
@@ -111,7 +114,7 @@ EMOJI_DICT = {
     "⌨️": ["teclear", "escribir", "codigo tecla", "programacion"],
     "🖥️": ["monitor", "escritorio", "setup", "estudio casero"],
     # ── VEICOLI / TRASPORTO ──
-    "🚗": ["carro", "v6", "v8", "v10", "v12", "coche", "nave", "motor", "acelerar", "velocidad", "ferrari", "lambo", "lamborghini", "porsche", "maserati", "bentley", "rolls royce", "maybach", "bugatti", "manejar", "corriendo en el carro", "audi", "honda"],
+    "🚗": ["carro", "v6", "v8", "v10", "v12", "coche", "nave", "motor", "acelerar", "velocidad", "ferrari", "AMG", "benz", "mercedes", "lambo", "lamborghini", "porsche", "maserati", "bentley", "rolls royce", "maybach", "bugatti", "manejar", "corriendo en el carro", "audi", "honda"],
     "🏍️": ["moto", "motocicleta", "motos", "ruedas dos", "bike", "biker", "encima la moto", "motosicleta", "motora", "motorita", "en la motora", "rodando en moto"],
     "✈️": ["avion", "vuelo", "aeropuerto", "pasaporte", "viaje", "viajar", "volando naciones", "private jet", "jet privado", "turista", "primera clase", "first class", "business class", "frontera"],
     "🚁": ["helicoptero", "chopper", "helicoptero privado"],
@@ -124,7 +127,7 @@ EMOJI_DICT = {
     "🛸": ["nave espacial", "ufo", "ciencia ficcion"],
     "🏃": ["corro", "corriendo", "fugarse", "escapar", "lejos", "huir", "perseguir", "correr"],
     # ── STRADA / PERICOLO / VIOLENZA ──
-    "🏚️": ["barrio", "caserio", "bloque", "callejon", "ghetto", "hood", "calle", "esquina", "donde crei", "donde me crie", "de abajo", "de los bajos", "de la loma", "del caño", "de la calle", "pata en el suelo", "humilde origen", "bando", "zona"],
+    "🏚️": ["barrio", "caserio", "bloque", "callejon", "ghetto", "hood", "esquina", "pata en el suelo", "humilde origen", "bando", "zona"],
     "🔫": ["dispara", "plomo", "pistola", "arma", "armas", "bala", "glock", "glock 17", "draco", "ak", "ak47", "ak 47", "calibre", "gatillo", "disparo", "tiro", "shooting", "matar", "delincuente","gangster", "ga" "criminal", "criminales", "crimen", "sicario", "maleante", "pandillero", "pandilleros", "banda criminal", "glopeta", "escopeta", "pow pow"],
     "💣": ["bomba", "guerra", "estallar", "peligro"],
     "⚔️": ["batalla", "combate", "guerrero", "rival", "enemigo", "tiraera", "diss", "war", "lucha"],
@@ -151,9 +154,9 @@ EMOJI_DICT = {
     "👯": ["amica'", "amigas", "bestie", "besties"],
     "🤷🏻‍♂️": ["Qué pasaría","no se", "No Sé","porque", "por que", "duda", "pregunta", "quien"],
     # ── CORPO / SENSI ──
-    "👀": ["mira", "mirar", "te miro", "mirando", "te veo", "ojos encima", "todos te miran", "ojos", "observar", "vista", "ojo", "ver", "viendo", "ciego", "ve'"],
+    "👀": ["ve'", "mira","vea", "mirar", "te miro", "mirando", "te veo", "ojos encima", "todos te miran", "ojos", "observar", "vista", "ojo", "ver", "viendo", "ciego", "ve'"],
     "👂": ["escucha", "escuchar", "escuchando", "escuchame", "escucho", "oido", "oreja", "oyendo"],
-    "🍑": ["perreo", "perrear","perreame", "perrearte", "twerk", "perrea","culo", "culito", "chapa", "nalgas","nalga'", "booty", "cadera", "curvas", "bien formada", "cuerpazo"],
+    "🍑": ["perreo", "perrear","perreame", "perrearte", "twerk", "perrea","culo", "culito", "chapa", "nalgota", "nalgas","nalga'", "booty", "cadera", "curvas", "bien formada", "cuerpazo"],
     "🍒": ["implante'","tetota", "tetotas", "boobies", "boobie", "pecho", "pechos", "seno", "senos", "chichis", "teta", "teta'"],
     "🍆": ["bicho", "eggplant", "verga", "pinga", "miembro"],
     "💪": ["musculo", "fuerza", "gym", "entreno", "entrenando", "fuerte", "pesa", "jangueo gym", "fitness"],
@@ -287,7 +290,7 @@ EMOJI_DICT = {
     "🇵🇪": ["peru", "peruano", "peruana", "lima", "cusco"],
     "🇨🇱": ["chile", "chileno", "chilena", "santiago"],
     "🇯🇲": ["jamaica", "jamaicano", "reggae", "rasta", "kingston"],
-    "🇵🇹": ["portugal", "portugues", "portuguesa", "lisboa", "porto"],
+    "🇵🇹": ["portugal", "portugues", "portuguesa", "lisboa",],
     "🇫🇷": ["francia", "frances", "francesa", "paris", "lyon"],
     "🇩🇪": ["alemania", "aleman", "alemana", "berlin"],
     "🇬🇧": ["reino unido", "ingles uk", "london", "londres"],
@@ -318,54 +321,146 @@ for emoji, words in EMOJI_DICT.items():
     for word in words:
         FLAT_EMOJI_MAP[word] = emoji
 
-_COMPILED_PATTERNS = []
-for _word in sorted(FLAT_EMOJI_MAP.keys(), key=len, reverse=True):
-    _word_clean = _word.replace("_", " ")
-    _COMPILED_PATTERNS.append(
-        (re.compile(rf'\b{re.escape(_word_clean)}\b'), FLAT_EMOJI_MAP[_word])
-    )
+
+def _normalize_for_match(text):
+    # Normalize common apostrophe variants to avoid regex boundary misses (e.g. "moja'").
+    text = re.sub(r"[\u2019\u2018\u0060\u00b4\u02bc']+", "", text)
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    return text.lower().strip()
+
+_NON_ALNUM_RE = re.compile(r"[^a-z0-9 ]+")
+
+
+def _tokenize_normalized(text):
+    text = _NON_ALNUM_RE.sub(" ", text)
+    return [tok for tok in text.split() if tok]
+
+
+_KEYWORD_BY_FIRST = {}
+_seen_keyword_pairs = set()
+for _word, _emoji in FLAT_EMOJI_MAP.items():
+    _word_norm = _normalize_for_match(_word.replace("_", " "))
+    _tokens = tuple(_tokenize_normalized(_word_norm))
+    if not _tokens:
+        continue
+    _pair_key = (_tokens, _emoji)
+    if _pair_key in _seen_keyword_pairs:
+        continue
+    _seen_keyword_pairs.add(_pair_key)
+    _KEYWORD_BY_FIRST.setdefault(_tokens[0], []).append((_tokens, _emoji))
+
+for _first in _KEYWORD_BY_FIRST:
+    _KEYWORD_BY_FIRST[_first].sort(key=lambda item: len(item[0]), reverse=True)
 
 _NUMBER_RE = re.compile(r'\b\d+\b')
 _DIGIT_MAP = {'0': '0️⃣', '1': '1️⃣', '2': '2️⃣', '3': '3️⃣', '4': '4️⃣',
               '5': '5️⃣', '6': '6️⃣', '7': '7️⃣', '8': '8️⃣', '9': '9️⃣'}
 _DIGIT_EMOJIS = set(_DIGIT_MAP.values())
 _HTTP_SESSION = requests.Session()
+_HTTP_SESSION.headers.update({"User-Agent": "RayNeo/1.0"})
+_HTTP_RETRY = Retry(
+    total=2,
+    connect=2,
+    read=2,
+    backoff_factor=0.25,
+    status_forcelist=(429, 500, 502, 503, 504),
+    allowed_methods=frozenset(["GET", "HEAD", "OPTIONS"]),
+)
+_HTTP_ADAPTER = HTTPAdapter(max_retries=_HTTP_RETRY, pool_connections=8, pool_maxsize=8)
+_HTTP_SESSION.mount("https://", _HTTP_ADAPTER)
+_HTTP_SESSION.mount("http://", _HTTP_ADAPTER)
+
+
+def _safe_filename_token(text):
+    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+    text = text.lower().replace("_", " ").strip()
+    text = re.sub(r"[^a-z0-9]+", "_", text).strip("_")
+    return text or "default"
+
+
+EMOJI_FILENAME_MAP = {
+    emoji: f"{_safe_filename_token(words[0])}.png"
+    for emoji, words in EMOJI_DICT.items()
+    if words
+}
+
+
+@lru_cache(maxsize=4096)
+def _normalize_lookup_text(text):
+    return _normalize_for_match(text)
+
+NEGATION_TOKENS = frozenset(["no", "nunca", "jamas", "ni"])
+MAX_EMOJI_EVENTS = 6
+
 
 @lru_cache(maxsize=2048)
-def _extract_emojis_cached(clean_text):
-    found_emojis = []
-    seen = set()
+def _extract_emoji_events_cached(normalized_text):
+    tokens = _tokenize_normalized(normalized_text)
+    events = []
 
-    for num_str in _NUMBER_RE.findall(clean_text):
-        combo = "".join(_DIGIT_MAP.get(d, '') for d in num_str)
-        if combo and combo not in seen:
-            found_emojis.append(combo)
-            seen.add(combo)
+    def _has_match_at(start_idx):
+        if start_idx >= len(tokens):
+            return False
+        for kw_tokens, _ in _KEYWORD_BY_FIRST.get(tokens[start_idx], []):
+            k_len = len(kw_tokens)
+            if tokens[start_idx:start_idx + k_len] == list(kw_tokens):
+                return True
+        return False
 
-    for pattern, emoji_to_add in _COMPILED_PATTERNS:
-        if pattern.search(clean_text):
-            if emoji_to_add in _DIGIT_EMOJIS:
-                if any(emoji_to_add in ex and ex != emoji_to_add for ex in found_emojis):
-                    continue
-            if emoji_to_add not in seen:
-                found_emojis.append(emoji_to_add)
-                seen.add(emoji_to_add)
+    i = 0
+    while i < len(tokens) and len(events) < MAX_EMOJI_EVENTS:
+        tk = tokens[i]
 
-        if len(found_emojis) >= 3:
+        # Keep numeric emoji support while preserving repeated occurrences.
+        if tk.isdigit():
+            combo = "".join(_DIGIT_MAP.get(d, "") for d in tk)
+            if combo:
+                events.append((combo, i, False))
+                if len(events) >= MAX_EMOJI_EVENTS:
+                    break
+
+        matched = False
+        for kw_tokens, emoji_to_add in _KEYWORD_BY_FIRST.get(tk, []):
+            k_len = len(kw_tokens)
+            if tokens[i:i + k_len] != list(kw_tokens):
+                continue
+
+            # "no <parola>" should mark the next emoji as negated instead of emitting standalone NO.
+            if tk in NEGATION_TOKENS and emoji_to_add == "❌" and _has_match_at(i + k_len):
+                matched = True
+                i += k_len
+                break
+
+            negated = i > 0 and tokens[i - 1] in NEGATION_TOKENS
+            center_idx = i + (k_len // 2)
+            events.append((emoji_to_add, center_idx, negated))
+            matched = True
+            i += k_len
             break
 
-    return tuple(found_emojis[:3])
+        if not matched:
+            i += 1
+
+    return tuple(events[:MAX_EMOJI_EVENTS])
+
+
+def extract_emoji_events(text):
+    if not text:
+        return []
+    norm_text = _normalize_lookup_text(text)
+    raw = _extract_emoji_events_cached(norm_text)
+    return [
+        {"emoji": emoji, "token_index": token_idx, "negated": negated}
+        for emoji, token_idx, negated in raw
+    ]
 
 
 def extract_emojis(text):
-    if not text:
-        return []
-    return list(_extract_emojis_cached(text.lower()))
+    return [item["emoji"] for item in extract_emoji_events(text)]
 
 def get_filename_for_emoji(emoji_char):
-    if emoji_char in EMOJI_DICT:
-        return EMOJI_DICT[emoji_char][0] + ".png"
-    return "default.png"
+    return EMOJI_FILENAME_MAP.get(emoji_char, "default.png")
 
 FLAG_EMOJI_CODEPOINTS = {
     "🇵🇷": "1f1f5-1f1f7",
@@ -391,6 +486,7 @@ FLAG_EMOJI_CODEPOINTS = {
 }
 
 def download_flag_images(assets_dir):
+    os.makedirs(assets_dir, exist_ok=True)
     for emoji_char, codepoint in FLAG_EMOJI_CODEPOINTS.items():
         filename = get_filename_for_emoji(emoji_char)
         path = os.path.join(assets_dir, filename)
