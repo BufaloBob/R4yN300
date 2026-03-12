@@ -65,7 +65,7 @@ EMOJI_DICT = {
     "🥹": ["aguantando", "lagrimas feliz", "emocionado llorar", "conmovido"],
     "😬": ["incomodo", "nervioso", "tenso", "awkward", "situacion rara"],
     "🥵": ["nena moxita", "en exceso","sudor", "sudando", "me derrito", "que calor", "sobrecalentado", "acalorado", "sofocao", "fiebre"],
-    "😈": ["Senda bellacona","zorra","atrevete","atrevida", "atravido","putilla","putona", "puta", "malo", "mala", "bad", "diablo", "diabla", "bandido", "bandida", "pecado", "portarse mal", "lado oscuro", "maldad", "villano", "villana", "mala influencia", "peligroso", "peligrosa", "tiguere", "tiguera", "malandro", "malandreo", "cabron", "cabrona", "infierno", "lucifer"],
+    "😈": ["picky","Senda bellacona","zorra","atrevete","atrevida", "atravido","putilla","putona", "puta", "malo", "mala", "bad", "diablo", "diabla", "bandido", "bandida", "pecado", "portarse mal", "lado oscuro", "maldad", "villano", "villana", "mala influencia", "peligroso", "peligrosa", "tiguere", "tiguera", "malandro", "malandreo", "cabron", "cabrona", "infierno", "lucifer"],
     "😇": ["angel", "pura", "puro", "inocente", "santa", "santo", "buena gente", "sin maldad", "limpia", "limpio", "bueno", "buena", "portarse bien", "juiciosa", "juicioso"],
     # ── STATUS / POTERE / SUCCESSO ──
     "👑": ["rey", "reina", "jefe", "jefa", "patron", "capo", "corona", "lider", "dueño", "dueña", "manda", "empire", "imperio", "cangri", "el mas duro", "la mas dura", "numero uno", "el jefe", "la jefa", "big boss", "poder"],
@@ -148,7 +148,7 @@ EMOJI_DICT = {
     "🙏": ["rezo", "oracion", "dios", "gracias dios", "bendicion", "bendito", "dios mio", "senor", "por favor dios", "fe", "confia en dios", "ruego", "ora", "damelo", "dámelo"],
     "🤙": ["llamame", "tranquilo", "sin drama", "todo bien", "shaka", "dime", "llamado"],
     "🤏": ["poquito", "poquita", "un poquito", "poquitito"],
-    "🙇‍♀️": ["arrodilla", "arrodillate", "arrodillada", "de rodillas"],
+    "🙇‍♀️": ["en 4", "arrodilla", "arrodillate", "arrodillada", "de rodillas"],
     "👏": ["aplauso", "aplaudir", "que bien", "felicitaciones"],
     "🫶": ["te apoyo", "contigo siempre", "amor y apoyo", "solidaridad", "familia", "corazon manos"],
     "👯": ["amica'", "amigas", "bestie", "besties"],
@@ -158,7 +158,7 @@ EMOJI_DICT = {
     "👂": ["escucha", "escuchar", "escuchando", "escuchame", "escucho", "oido", "oreja", "oyendo"],
     "🍑": ["perreo", "perrear","perreame", "perrearte", "twerk", "perrea","culo", "culito", "chapa", "nalgota", "nalgas","nalga'", "booty", "cadera", "curvas", "bien formada", "cuerpazo"],
     "🍒": ["implante'","tetota", "tetotas", "boobies", "boobie", "pecho", "pechos", "seno", "senos", "chichis", "teta", "teta'"],
-    "🍆": ["bicho", "eggplant", "verga", "pinga", "miembro"],
+    "🍆": ["bicho", "eggplant", "verga", "pinga", "miembro", "dicky"],
     "💪": ["musculo", "fuerza", "gym", "entreno", "entrenando", "fuerte", "pesa", "jangueo gym", "fitness"],
     "🦵": ["pierna", "piernas", "patea", "patada", "correr rapido"],
     "🦶": ["pie", "pies", "descalzo"],
@@ -487,11 +487,26 @@ FLAG_EMOJI_CODEPOINTS = {
 
 def download_flag_images(assets_dir):
     os.makedirs(assets_dir, exist_ok=True)
+    ssl_blocked = False
     for emoji_char, codepoint in FLAG_EMOJI_CODEPOINTS.items():
+        if ssl_blocked:
+            break
+
         filename = get_filename_for_emoji(emoji_char)
         path = os.path.join(assets_dir, filename)
         if os.path.exists(path):
             continue
+
+        legacy_path = os.path.join(assets_dir, filename.replace("_", " "))
+        if os.path.exists(legacy_path):
+            try:
+                os.replace(legacy_path, path)
+            except Exception:
+                # Se il rename fallisce manteniamo il legacy come valido.
+                pass
+            if os.path.exists(path) or os.path.exists(legacy_path):
+                continue
+
         url = f"https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72/{codepoint}.png"
         try:
             print(f"🏳️ Download bandiera: {filename}...")
@@ -504,3 +519,6 @@ def download_flag_images(assets_dir):
                 print(f"   ⚠️ {filename} HTTP {r.status_code}")
         except Exception as e:
             print(f"   ⚠️ {filename} errore: {e}")
+            if "CERTIFICATE_VERIFY_FAILED" in str(e):
+                print("   ⚠️ Download bandiere interrotto: certificato SSL non verificabile")
+                ssl_blocked = True
