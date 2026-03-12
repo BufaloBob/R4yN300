@@ -1,5 +1,7 @@
 import os
 import sys
+import math
+import importlib
 import threading
 import time
 import requests
@@ -14,6 +16,7 @@ import json
 import traceback
 import logging
 import unicodedata
+from typing import Any, Optional, cast
 from datetime import datetime
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
@@ -25,14 +28,27 @@ import numpy as np
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from shazamio import Shazam
-
-AUDIO_INPUT_DEVICE = None
+try:
+    _shazam_module = importlib.import_module("shazamio")
+    Shazam = _shazam_module.Shazam
+    SHAZAM_IMPORT_ERROR = None
+except Exception as _shazam_import_exc:
+    Shazam = None
+    SHAZAM_IMPORT_ERROR = _shazam_import_exc
 
 GROQ_API_KEY      = os.getenv("GROQ_API_KEY", "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")
+ACR_ACCESS_KEY    = os.getenv("ACR_ACCESS_KEY", "")
+ACR_ACCESS_SECRET = os.getenv("ACR_ACCESS_SECRET", "")
 ACR_HOST          = os.getenv("ACR_HOST", "identify-eu-west-1.acrcloud.com")
-ACR_ACCESS_KEY    = os.getenv("ACR_ACCESS_KEY", "decbcc1f6e68593c7f6fdbc603990533")
-ACR_ACCESS_SECRET = os.getenv("ACR_ACCESS_SECRET", "Jas1pzmo7Y0qFSReLTWxTxV2Hznglzq7CzTBLno4")
+
+_audio_input_env = os.getenv("AUDIO_INPUT_DEVICE", "").strip()
+if _audio_input_env:
+    try:
+        AUDIO_INPUT_DEVICE = int(_audio_input_env)
+    except ValueError:
+        AUDIO_INPUT_DEVICE = _audio_input_env
+else:
+    AUDIO_INPUT_DEVICE = None
 
 TARGET_LANGUAGE = "es"
 
@@ -161,43 +177,81 @@ os.makedirs(ASSETS_DIR, exist_ok=True)
 os.makedirs(FONTS_DIR, exist_ok=True)
 
 COOL_FONTS = {
-    'Orbitron':   'https://github.com/google/fonts/raw/main/ofl/orbitron/static/Orbitron-Bold.ttf',
     'Audiowide':  'https://github.com/google/fonts/raw/main/ofl/audiowide/Audiowide-Regular.ttf',
-    'Exo2':       'https://github.com/google/fonts/raw/main/ofl/exo2/static/Exo2-Bold.ttf',
-    'Saira':      'https://github.com/google/fonts/raw/main/ofl/saira/static/Saira-Bold.ttf',
-    'Teko':       'https://github.com/google/fonts/raw/main/ofl/teko/static/Teko-SemiBold.ttf',
+    'Brygada1918': 'https://github.com/google/fonts/raw/main/ofl/brygada1918/Brygada1918-Regular.ttf',
+    'GentiumBookPlus': 'https://github.com/google/fonts/raw/main/ofl/gentiumbookplus/GentiumBookPlus-Regular.ttf',
+    'GFSDidot': 'https://github.com/google/fonts/raw/main/ofl/gfsdidot/GFSDidot-Regular.ttf',
+    'Rajdhani':   'https://github.com/google/fonts/raw/main/ofl/rajdhani/Rajdhani-Bold.ttf',
     'RussoOne':   'https://github.com/google/fonts/raw/main/ofl/russoone/RussoOne-Regular.ttf',
-    'Oxanium':    'https://github.com/google/fonts/raw/main/ofl/oxanium/static/Oxanium-Bold.ttf',
     'Michroma':   'https://github.com/google/fonts/raw/main/ofl/michroma/Michroma-Regular.ttf',
 }
 
+
+def _collect_local_fonts():
+    fonts = []
+    if not os.path.isdir(FONTS_DIR):
+        return fonts
+    for name in sorted(os.listdir(FONTS_DIR)):
+        if name.lower().endswith('.ttf'):
+            fonts.append(os.path.join(FONTS_DIR, name))
+    return fonts
+
 def download_fonts():
-    available = []
+    available = _collect_local_fonts()
+    known = set(available)
     for name, url in COOL_FONTS.items():
         path = os.path.join(FONTS_DIR, f"{name}.ttf")
         if os.path.exists(path):
-            available.append(path)
+            if path not in known:
+                available.append(path)
+                known.add(path)
             continue
         try:
             print(f"📥 Download font: {name}...")
-            r = http_get(url, timeout=15)
+            r = http_get(url, timeout=8)
             if r.status_code == 200:
                 with open(path, 'wb') as f:
                     f.write(r.content)
-                available.append(path)
+                if path not in known:
+                    available.append(path)
+                    known.add(path)
                 print(f"   ✅ {name} scaricato")
             else:
                 print(f"   ⚠️ {name} HTTP {r.status_code}")
         except Exception as e:
             print(f"   ⚠️ {name} errore: {e}")
+
+    # Raccoglie anche eventuali font copiati manualmente dall'utente.
+    for path in _collect_local_fonts():
+        if path not in known:
+            available.append(path)
+            known.add(path)
+
     return available
 
-AVAILABLE_FONTS = download_fonts()
+from emojis import download_flag_images, extract_emojis, extract_emoji_events, get_filename_for_emoji, FLAT_EMOJI_MAP
 
-from emojis import download_flag_images
-download_flag_images(ASSETS_DIR)
+_STARTUP_ASSETS_READY = False
+_STARTUP_ASSETS_NETWORK_READY = False
+AVAILABLE_FONTS = []
 
-from emojis import extract_emojis, extract_emoji_events, get_filename_for_emoji, FLAT_EMOJI_MAP
+
+def _prepare_startup_assets(allow_network_downloads: bool):
+    """Prepare assets in 2 stages: local first, network upgrade when allowed."""
+    global _STARTUP_ASSETS_READY, _STARTUP_ASSETS_NETWORK_READY, AVAILABLE_FONTS
+
+    if not _STARTUP_ASSETS_READY:
+        AVAILABLE_FONTS = _collect_local_fonts()
+        _STARTUP_ASSETS_READY = True
+
+    if allow_network_downloads and not _STARTUP_ASSETS_NETWORK_READY:
+        AVAILABLE_FONTS = download_fonts()
+        download_flag_images(ASSETS_DIR)
+        _STARTUP_ASSETS_NETWORK_READY = True
+
+
+_ALLOW_NETWORK_STARTUP = (__name__ == '__main__' and os.getenv("RAYNEO_SKIP_SPLASH") == "1")
+_prepare_startup_assets(_ALLOW_NETWORK_STARTUP)
 
 _EMOJI_TO_KEYWORDS = {}
 for _kw, _emo in FLAT_EMOJI_MAP.items():
@@ -257,19 +311,6 @@ FloatLayout:
             size: self.size
 
     Label:
-        id: sync_indicator
-        text: "[b]Standby ⏳[/b]"
-        markup: True
-        size_hint: None, None
-        size: root.width * 0.23, root.height * 0.07
-        pos_hint: {'x': 0.02, 'top': 0.98}
-        font_size: root.height * 0.028
-        color: [0.5, 0.5, 0.5, 1]
-        halign: 'left'
-        valign: 'top'
-        text_size: self.size
-
-    Label:
         id: diag_label
         text: ""
         size_hint: None, None
@@ -308,6 +349,7 @@ FloatLayout:
                 text_size: self.size
                 halign: 'center'
                 valign: 'middle'
+                max_lines: 1
                 background_color: [0.6, 0, 0.9, 1]
                 on_press: app.start_manual_search(title_input.text)
 
@@ -323,6 +365,7 @@ FloatLayout:
                 text_size: self.size
                 halign: 'center'
                 valign: 'middle'
+                max_lines: 1
                 background_color: [1, 0.4, 0, 1]
                 on_press: app.toggle_omni_listen()
             Button:
@@ -333,6 +376,7 @@ FloatLayout:
                 text_size: self.size
                 halign: 'center'
                 valign: 'middle'
+                max_lines: 1
                 size_hint_x: 0.33
                 background_color: [0.5, 0.5, 0.5, 1]
                 on_press: app.toggle_sync_mode()
@@ -344,6 +388,7 @@ FloatLayout:
                 text_size: self.size
                 halign: 'center'
                 valign: 'middle'
+                max_lines: 1
                 size_hint_x: 0.27
                 background_color: [0.35, 0.35, 0.35, 1]
                 on_press: app.toggle_diagnostic_mode()
@@ -356,9 +401,10 @@ FloatLayout:
                 text: ""
                 font_size: root.height * 0.019
                 color: [0.8, 0, 1, 0.5]
-                text_size: self.width, None
+                text_size: self.width, self.height
                 halign: 'center'
                 valign: 'middle'
+                max_lines: 1
 
         ScrollView:
             size_hint_y: 0.22
@@ -383,8 +429,6 @@ FloatLayout:
                 halign: 'center'
                 text_size: root.width - 80, self.height
                 max_lines: 1
-                shorten: True
-                shorten_from: 'right'
             FloatLayout:
                 size_hint_y: 1
                 Label:
@@ -398,8 +442,8 @@ FloatLayout:
                     markup: True
                     size_hint: 1, 1
                     pos_hint: {'center_x': 0.5, 'center_y': 0.5}
-                    text_size: root.width - 40, None
-                    max_lines: 4
+                    text_size: root.width - 40, self.height
+                    max_lines: 1
                     outline_width: 0
                     outline_color: [0, 0, 0, 0]
                 Label:
@@ -414,8 +458,8 @@ FloatLayout:
                     markup: True
                     size_hint: 1, 1
                     pos_hint: {'center_x': 0.5, 'center_y': 0.5}
-                    text_size: root.width - 40, None
-                    max_lines: 4
+                    text_size: root.width - 40, self.height
+                    max_lines: 1
                     outline_width: 0
                     outline_color: [0, 0, 0, 0]
             Label:
@@ -428,8 +472,6 @@ FloatLayout:
                 halign: 'center'
                 text_size: root.width - 80, self.height
                 max_lines: 1
-                shorten: True
-                shorten_from: 'right'
 
         BoxLayout:
             size_hint_y: 0.08
@@ -439,8 +481,9 @@ FloatLayout:
                 text: "HUD AR Pronto - Sync Engine V5"
                 font_size: root.height * 0.019
                 color: [0.8, 0, 1, 0.5]
-                text_size: self.width, None
+                text_size: self.width, self.height
                 halign: 'center'
+                max_lines: 1
 
     Label:
         id: no_sync_label
@@ -458,8 +501,8 @@ FloatLayout:
 
     Label:
         id: start_splash
-        text: "[b]START[/b]"
-        markup: True
+        text: ""
+        markup: False
         size_hint: None, None
         size: root.width, root.height * 0.25
         pos_hint: {'center_x': 0.5, 'center_y': 0.55}
@@ -698,6 +741,11 @@ def recognize_with_acrcloud(audio_bytes: bytes, sample_rate: int = 44100) -> dic
     return None
 
 class RayNeoTestApp(App):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Kivy costruisce il widget root a runtime via Builder.
+        self.root_ui: Any = None
+
     def build(self):
         print("\n🎧 Dispositivi audio disponibili:")
         try:
@@ -709,13 +757,14 @@ class RayNeoTestApp(App):
         except Exception as e:
             print(f"   Errore: {e}")
         print()
-        self.root_ui = Builder.load_string(KV)
-        # Ensure phrases are never truncated by widget shortening.
+        self.root_ui = cast(Any, Builder.load_string(KV))
+        # Scritte SEMPRE su una riga sola — mai a capo.
         for lbl_id in ('lyric_prev', 'lyric_curr', 'lyric_next', 'lyric_glow'):
             lbl = self.root_ui.ids[lbl_id]
             lbl.shorten = False
-            lbl.max_lines = 4
+            lbl.max_lines = 1
         self._update_lyric_text_bounds()
+        Clock.schedule_once(lambda dt: self._refit_non_lyric_texts(), 0)
         Window.bind(size=self._on_window_resize)
         self.lyrics_data = []
         self.current_index = 0
@@ -814,17 +863,78 @@ class RayNeoTestApp(App):
 
     def _on_window_resize(self, *args):
         self._update_lyric_text_bounds()
+        self._refit_non_lyric_texts()
 
     def _update_lyric_text_bounds(self):
         if not getattr(self, 'root_ui', None):
             return
         ids = self.root_ui.ids
-        center_w = max(260, int(Window.width - 40))
-        side_w = max(220, int(Window.width - 100))
-        ids.lyric_curr.text_size = (center_w, None)
-        ids.lyric_glow.text_size = (center_w, None)
-        ids.lyric_prev.text_size = (side_w, None)
-        ids.lyric_next.text_size = (side_w, None)
+        center_w = max(120, int(Window.width - 40))
+        side_w = max(100, int(Window.width - 100))
+        # Height fissa = riga singola, mai a capo
+        ids.lyric_curr.text_size = (center_w, ids.lyric_curr.height)
+        ids.lyric_glow.text_size = (center_w, ids.lyric_glow.height)
+        ids.lyric_prev.text_size = (side_w, ids.lyric_prev.height)
+        ids.lyric_next.text_size = (side_w, ids.lyric_next.height)
+
+    def _normalize_single_line(self, text: str) -> str:
+        raw = "" if text is None else str(text)
+        return re.sub(r"\s+", " ", raw.replace("\r", " ").replace("\n", " ")).strip()
+
+    def _strip_kivy_markup(self, text: str) -> str:
+        return re.sub(r"\[/?[^\]]+\]", "", text or "")
+
+    def _fit_one_line_widget(self, widget, text: str, max_sp: int, min_sp: int, width_pad: int = 8, markup: bool = False):
+        clean = self._normalize_single_line(text)
+        plain = self._strip_kivy_markup(clean) if markup else clean
+        avail = max(80, int(widget.width - width_pad))
+        line_h = max(1, int(widget.height))
+        widget.text_size = (avail, line_h)
+        widget.max_lines = 1
+        widget.shorten = False
+        widget.font_size = f"{self._fit_text_sp(plain, max_sp=max_sp, min_sp=min_sp, avail_width=avail)}sp"
+        widget.text = clean
+
+    def _refit_result_buttons(self):
+        if not getattr(self, 'root_ui', None):
+            return
+        results = self.root_ui.ids.results_list
+        for child in results.children:
+            if isinstance(child, Button):
+                txt = self._normalize_single_line(getattr(child, 'text', ''))
+                avail = max(80, int(Window.width * 0.9))
+                child.text_size = (avail, max(1, int(child.height)))
+                child.max_lines = 1
+                child.shorten = False
+                child.font_size = f"{self._fit_text_sp(txt, int(Window.height * 0.021), max(6, int(Window.height * 0.007)), avail)}sp"
+                child.text = txt
+
+    def _refit_non_lyric_texts(self):
+        if not getattr(self, 'root_ui', None):
+            return
+        ids = self.root_ui.ids
+        self._fit_one_line_widget(
+            ids.track_label,
+            ids.track_label.text,
+            max_sp=int(Window.height * 0.019),
+            min_sp=max(6, int(Window.height * 0.007)),
+        )
+        self._fit_one_line_widget(
+            ids.status_label,
+            ids.status_label.text,
+            max_sp=int(Window.height * 0.019),
+            min_sp=max(6, int(Window.height * 0.007)),
+        )
+        for btn_id in ("manual_search_btn", "omni_toggle_btn", "sync_toggle_btn", "diag_toggle_btn"):
+            btn = ids[btn_id]
+            self._fit_one_line_widget(
+                btn,
+                btn.text,
+                max_sp=int(Window.height * 0.021),
+                min_sp=max(6, int(Window.height * 0.007)),
+                width_pad=12,
+            )
+        self._refit_result_buttons()
 
     def _run_startup_animation(self, dt=0):
         ids = self.root_ui.ids
@@ -861,6 +971,7 @@ class RayNeoTestApp(App):
                     lambda _x, ww=w: Animation(opacity=1, duration=0.35, t='out_quad').start(ww),
                     0.08 * i
                 )
+            self._refit_non_lyric_texts()
 
         Clock.schedule_once(reveal_ui, 0.75)
 
@@ -909,14 +1020,12 @@ class RayNeoTestApp(App):
         if not text:
             return max(min_sp, min(max_sp, int(Window.height * 0.03)))
 
-        plain = text.replace('[', '').replace(']', '')
-        words = plain.split()
+        plain = self._strip_kivy_markup(text)
+        plain = self._normalize_single_line(plain)
         chars = max(1, len(plain))
-        longest_word = max((len(w) for w in words), default=chars)
-        target_lines = 2 if chars > 24 else 1
-        eff_chars = max(longest_word, int(chars / target_lines))
-        avg_glyph = 0.62
-        est_sp = int(avail_width / max(1.0, eff_chars * avg_glyph))
+        # Sempre UNA riga sola — calcola font size che entra in larghezza
+        avg_glyph = 0.85
+        est_sp = int(max(80.0, float(avail_width)) / max(1.0, chars * avg_glyph))
         return max(min_sp, min(max_sp, est_sp))
 
     def toggle_omni_listen(self):
@@ -938,7 +1047,7 @@ class RayNeoTestApp(App):
                 self.set_status("⏸️ Omni-Mode OFF — Sync ancora attivo.")
             else:
                 self.set_status("⏸️ Omni-Mode OFF.")
-                self.update_sync_ui("Standby ⏳", [0.5, 0.5, 0.5, 1])
+        self._refit_non_lyric_texts()
 
     def toggle_sync_mode(self):
         self.sync_enabled = not self.sync_enabled
@@ -967,6 +1076,7 @@ class RayNeoTestApp(App):
                 self.root_ui.ids.sync_toggle_btn.text = "⏸️ SYNC: OFF"
                 self.root_ui.ids.sync_toggle_btn.background_color = [0.5, 0.5, 0.5, 1]
                 self.set_status("⏸️ Sync SPENTO — il testo scorre libero.")
+            self._refit_non_lyric_texts()
         Clock.schedule_once(_ui, 0)
 
     def toggle_diagnostic_mode(self):
@@ -997,6 +1107,7 @@ class RayNeoTestApp(App):
                 except Exception:
                     pass
                 self._diag_log_file = None
+        self._refit_non_lyric_texts()
 
     def _diag_set(self, **kwargs):
         self._diag_stats.update(kwargs)
@@ -1066,27 +1177,48 @@ class RayNeoTestApp(App):
     def show_no_sync_warning(self, txt="⚠️ No Sync"):
         def _anim(dt):
             lbl = self.root_ui.ids.no_sync_label
-            lbl.text = txt
+            self._fit_one_line_widget(
+                lbl,
+                txt,
+                max_sp=int(Window.height * 0.025),
+                min_sp=max(6, int(Window.height * 0.007)),
+                width_pad=8,
+            )
             lbl.opacity = 1
             anim = Animation(opacity=1, duration=1.0) + Animation(opacity=0, duration=0.5)
             anim.start(lbl)
         Clock.schedule_once(_anim)
 
     def set_status(self, msg):
-        self.root_ui.ids.status_label.text = msg
+        clean = self._normalize_single_line(msg)
+
+        def _set(dt):
+            self._fit_one_line_widget(
+                self.root_ui.ids.status_label,
+                clean,
+                max_sp=int(Window.height * 0.019),
+                min_sp=max(6, int(Window.height * 0.007)),
+            )
+
+        Clock.schedule_once(_set, 0)
 
     def update_sync_ui(self, text, color_rgba):
-        def _update(dt):
-            self.root_ui.ids.sync_indicator.text = f"[b]{text}[/b]"
-            self.root_ui.ids.sync_indicator.color = color_rgba
-        Clock.schedule_once(_update)
+        # Sync indicator panel removed by design.
+        _ = text
+        _ = color_rgba
 
     def update_track_ui(self, title="", artist=""):
         def _update(dt):
             if title:
-                self.root_ui.ids.track_label.text = f"🎵 {title} — {artist}" if artist else f"🎵 {title}"
+                txt = f"🎵 {title} — {artist}" if artist else f"🎵 {title}"
             else:
-                self.root_ui.ids.track_label.text = ""
+                txt = ""
+            self._fit_one_line_widget(
+                self.root_ui.ids.track_label,
+                txt,
+                max_sp=int(Window.height * 0.019),
+                min_sp=max(6, int(Window.height * 0.007)),
+            )
         Clock.schedule_once(_update)
 
     def _score_lrclib_candidate(self, item: dict, wanted_title: str = "", wanted_artist: str = ""):
@@ -1220,7 +1352,19 @@ class RayNeoTestApp(App):
                 self._diag_event("presync_probe_weak", score=(best[1] if best else 0))
                 return None
 
-            matched = pool[best[2]]
+            if len(best) >= 3:
+                try:
+                    best_idx = int(best[2])
+                except (TypeError, ValueError):
+                    return None
+            else:
+                # Fallback difensivo in caso di tuple senza indice.
+                best_idx = next((i for i, row in enumerate(pool) if row['clean'] == best[0]), -1)
+
+            if best_idx < 0 or best_idx >= len(pool):
+                return None
+
+            matched = pool[best_idx]
             phrase_offset = estimate_phrase_start_in_buffer(probe_text, 3.0, 0.0)
             tail_after_phrase = max(0.0, 3.0 - phrase_offset)
             song_time_at_clip_end = matched['time'] + tail_after_phrase
@@ -1309,8 +1453,11 @@ class RayNeoTestApp(App):
 
             def try_shazam_A():
                 try:
+                    shazam_cls = Shazam
+                    if shazam_cls is None:
+                        return
                     async def _run():
-                        return await asyncio.wait_for(Shazam().recognize(path_A), timeout=5.0)
+                        return await asyncio.wait_for(shazam_cls().recognize(path_A), timeout=5.0)
                     out = asyncio.run(_run())
                     track = (out or {}).get('track', {})
                     if track and track.get('title'):
@@ -1322,8 +1469,11 @@ class RayNeoTestApp(App):
 
             def try_shazam_B():
                 try:
+                    shazam_cls = Shazam
+                    if shazam_cls is None:
+                        return
                     async def _run():
-                        return await asyncio.wait_for(Shazam().recognize(path_B), timeout=5.0)
+                        return await asyncio.wait_for(shazam_cls().recognize(path_B), timeout=5.0)
                     out = asyncio.run(_run())
                     track = (out or {}).get('track', {})
                     if track and track.get('title'):
@@ -1343,10 +1493,16 @@ class RayNeoTestApp(App):
                 except Exception as e:
                     print(f"[Verifica ACRCloud] Errore: {e}")
 
-            t1 = threading.Thread(target=try_shazam_A, daemon=True, name="V-Shazam-A")
-            t2 = threading.Thread(target=try_shazam_B, daemon=True, name="V-Shazam-B")
-            t3 = threading.Thread(target=try_acrcloud,  daemon=True, name="V-ACR")
-            t1.start(); t2.start(); t3.start()
+            if Shazam is not None:
+                t1 = threading.Thread(target=try_shazam_A, daemon=True, name="V-Shazam-A")
+                t2 = threading.Thread(target=try_shazam_B, daemon=True, name="V-Shazam-B")
+                t1.start()
+                t2.start()
+            else:
+                print(f"[Verifica] Shazam disabilitato: {SHAZAM_IMPORT_ERROR}")
+
+            t3 = threading.Thread(target=try_acrcloud, daemon=True, name="V-ACR")
+            t3.start()
 
             majority_reached = first_found_event.wait(timeout=4.0)
 
@@ -1507,13 +1663,21 @@ class RayNeoTestApp(App):
                         self.lyrics_data = []
                         self.is_playing  = False
                         Clock.unschedule(self.update_loop)
+                        reset_msg = "🎵 Nuova canzone — cerco il brano..."
+                        reset_sp = self._fit_text_sp(
+                            reset_msg,
+                            max_sp=min(LYRIC_FONT_MAX_SP, int(Window.height * 0.062)),
+                            min_sp=max(6, int(Window.height * 0.007)),
+                            avail_width=Window.width - 44,
+                        )
                         self.root_ui.ids.lyric_curr.text = (
-                            "[color=FFA500]🎵 Nuova canzone — cerco il brano...[/color]"
+                            f"[size={reset_sp}sp][color=FFA500]{reset_msg}[/color][/size]"
                         )
                         self.root_ui.ids.lyric_prev.text = ""
                         self.root_ui.ids.lyric_next.text = ""
                         self.root_ui.ids.sync_toggle_btn.text = "⏸️ SYNC: OFF"
                         self.root_ui.ids.sync_toggle_btn.background_color = [0.5, 0.5, 0.5, 1]
+                        self._refit_non_lyric_texts()
                     Clock.schedule_once(_reset_ui, 0)
 
         except Exception as e:
@@ -1758,9 +1922,12 @@ class RayNeoTestApp(App):
 
             def try_shazam_A():
                 try:
+                    shazam_cls = Shazam
+                    if shazam_cls is None:
+                        return
                     print("[Shazam-A] Avvio...")
                     async def _run():
-                        return await asyncio.wait_for(Shazam().recognize(path_A), timeout=5.0)
+                        return await asyncio.wait_for(shazam_cls().recognize(path_A), timeout=5.0)
                     out = asyncio.run(_run())
                     track = (out or {}).get('track', {})
                     if track:
@@ -1776,9 +1943,12 @@ class RayNeoTestApp(App):
 
             def try_shazam_B():
                 try:
+                    shazam_cls = Shazam
+                    if shazam_cls is None:
+                        return
                     print("[Shazam-B] Avvio...")
                     async def _run():
-                        return await asyncio.wait_for(Shazam().recognize(path_B), timeout=5.0)
+                        return await asyncio.wait_for(shazam_cls().recognize(path_B), timeout=5.0)
                     out = asyncio.run(_run())
                     track = (out or {}).get('track', {})
                     if track:
@@ -1804,11 +1974,15 @@ class RayNeoTestApp(App):
                 except Exception as e:
                     print(f"[ACRCloud] Errore: {type(e).__name__}: {e}")
 
-            t1 = threading.Thread(target=try_shazam_A,      daemon=True, name="Shazam-A")
-            t2 = threading.Thread(target=try_shazam_B,      daemon=True, name="Shazam-B")
+            if Shazam is not None:
+                t1 = threading.Thread(target=try_shazam_A, daemon=True, name="Shazam-A")
+                t2 = threading.Thread(target=try_shazam_B, daemon=True, name="Shazam-B")
+                t1.start()
+                t2.start()
+            else:
+                print(f"[Riconoscimento] Shazam disabilitato: {SHAZAM_IMPORT_ERROR}")
+
             t3 = threading.Thread(target=try_acrcloud_main, daemon=True, name="ACRCloud")
-            t1.start()
-            t2.start()
             t3.start()
 
             majority_reached = first_found_event.wait(timeout=4.0)
@@ -2305,7 +2479,7 @@ class RayNeoTestApp(App):
         print(f"   🔍 Canzone check: full={score_full}% local={score_local}% → canzone diversa")
         return False, score_full, score_local, strong_mismatch
 
-    def _limit_sync_step(self, target_start: float, now_apply: float, current_start: float = None) -> float:
+    def _limit_sync_step(self, target_start: float, now_apply: float, current_start: Optional[float] = None) -> float:
         """Limit sync correction per update to avoid sudden speed/lag oscillations."""
         if current_start is None:
             current_start = float(self.start_timestamp)
@@ -2357,7 +2531,7 @@ class RayNeoTestApp(App):
         RETRO_TOLLERANZA = 3.0
         min_search_time = max(0.0, self.max_song_time_reached - RETRO_TOLLERANZA)
 
-        if self.sync_verify_mode and self.anchor_song_time is not None:
+        if self.sync_verify_mode and self.anchor_song_time is not None and self.anchor_real_time is not None:
             elapsed  = t_phrase_start - self.anchor_real_time
             expected = self.anchor_song_time + elapsed
             pool_v = [
@@ -2373,8 +2547,13 @@ class RayNeoTestApp(App):
                 pool_c = {i: (x['clean'] or clean_text(x['text'])) for i, x in enumerate(pool_v)}
                 best_v = process.extractOne(sentito_clean, pool_c, scorer=fuzz.partial_ratio)
                 score_v = best_v[1] if best_v else 0
-                if score_v >= SOGLIA_AFFINITA_SYNC:
-                    idx_v = best_v[2]
+                if best_v and score_v >= SOGLIA_AFFINITA_SYNC:
+                    if len(best_v) >= 3:
+                        idx_v = int(best_v[2])
+                    else:
+                        idx_v = next((i for i, x in enumerate(pool_v) if (x['clean'] or clean_text(x['text'])) == best_v[0]), -1)
+                    if idx_v < 0 or idx_v >= len(pool_v):
+                        return False
                     diff    = abs(self.start_timestamp - (t_phrase_start - pool_v[idx_v]['time']))
                     if diff < SYNC_DEAD_ZONE:
                         self.sync_perfect_streak += 1
@@ -2712,15 +2891,15 @@ class RayNeoTestApp(App):
             for res in results[:6]:
                 t_name = res.get('trackName') or res.get('title') or "Sconosciuto"
                 a_name = res.get('artistName') or res.get('artist') or "Sconosciuto"
-                b = Button(
-                    text=f"⭐ {t_name} | {a_name}",
+                b = cast(Any, Button(
+                    text=self._normalize_single_line(f"⭐ {t_name} | {a_name}"),
                     size_hint_y=None, height=max(40, int(Window.height * 0.076)),
-                    font_size=f'{int(Window.height * 0.021)}sp',
+                    font_size=f'{self._fit_text_sp(f"⭐ {t_name} | {a_name}", int(Window.height * 0.021), max(6, int(Window.height * 0.007)), Window.width * 0.9)}sp',
                     background_color=[0.15, 0.15, 0.2, 1],
-                    shorten=True,
-                    shorten_from='right',
-                    text_size=(Window.width * 0.9, None)
-                )
+                    shorten=False,
+                    max_lines=1,
+                    text_size=(Window.width * 0.9, max(40, int(Window.height * 0.076)))
+                ))
                 def on_click(instance, r=res, _t=t_name, _a=a_name):
                     self.root_ui.ids.results_list.clear_widgets()
                     self._diag_mark('song_select_click')
@@ -2990,7 +3169,7 @@ class RayNeoTestApp(App):
                 base = self._fit_text_sp(
                     " ".join(words),
                     max_sp=min(LYRIC_FONT_MAX_SP, int(Window.height * 0.062)),
-                    min_sp=max(LYRIC_FONT_MIN_SP, int(Window.height * 0.016)),
+                    min_sp=max(6, int(Window.height * 0.007)),
                     avail_width=Window.width - 44,
                 )
                 self._cached_line_sp = base
@@ -3019,10 +3198,10 @@ class RayNeoTestApp(App):
 
         for lbl_id, txt in [('lyric_prev', p), ('lyric_next', n)]:
             neon = self.current_neon
-            clean_txt = txt.replace('[', '').replace(']', '')
+            clean_txt = self._normalize_single_line(txt.replace('[', '').replace(']', ''))
             lbl = self.root_ui.ids[lbl_id]
-            lbl.text_size = (Window.width - 80, None)
-            lbl.font_size = f"{self._fit_text_sp(clean_txt, int(Window.height * 0.033), int(Window.height * 0.018), Window.width - 80)}sp"
+            lbl.text_size = (Window.width - 80, lbl.height)
+            lbl.font_size = f"{self._fit_text_sp(clean_txt, int(Window.height * 0.033), max(6, int(Window.height * 0.007)), Window.width - 80)}sp"
             if lbl_id == 'lyric_prev' and clean_txt:
                 lbl.text = f"[color={neon}]{clean_txt}[/color]"
             else:
@@ -3188,5 +3367,573 @@ class RayNeoTestApp(App):
 
         Clock.schedule_once(process_emojis, 0.1)
 
-if __name__ == '__main__':
+def _run_main_app():
     RayNeoTestApp().run()
+
+
+def _build_qt_splash_classes():
+    from PySide6.QtCore import (
+        QEasingCurve,
+        QPointF,
+        Property,
+        QPauseAnimation,
+        QPropertyAnimation,
+        QSequentialAnimationGroup,
+        Qt,
+        QTimer,
+        Signal,
+    )
+    from PySide6.QtGui import QColor, QFont, QFontDatabase, QPainter, QPainterPath, QPen, QRadialGradient, QTransform
+    from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
+
+    class NeonSigmaWidget(QWidget):
+        """Disegna il simbolo Sigma con glow neon viola e ciano."""
+
+        def __init__(self, parent=None):
+            super().__init__(parent)
+            self._master_opacity = 0.0
+            self._glow_pulse = 0.0
+            self._time_s = 0.0
+            self._cached_path = QPainterPath()
+            self._cached_size = (-1, -1)
+            self._sigma_font_family = "Brygada 1918"
+            self._font_registered = False
+            # Butterfly seeds: unique per-butterfly randomness
+            self._bfly_seeds = [0.0, 1.37, 2.74, 4.11, 5.48, 6.85]
+            self._bfly_sizes = [1.0, 0.82, 1.1, 0.9, 0.75, 0.95]
+            self._bfly_agents = []
+            self._bfly_last_sim_t = 0.0
+
+        def get_master_opacity(self):
+            return self._master_opacity
+
+        def set_master_opacity(self, value):
+            self._master_opacity = max(0.0, min(1.0, float(value)))
+            self.update()
+
+        masterOpacity = Property(float, get_master_opacity, set_master_opacity)
+
+        def get_glow_pulse(self):
+            return self._glow_pulse
+
+        def set_glow_pulse(self, value):
+            self._glow_pulse = max(0.0, min(1.0, float(value)))
+            self.update()
+
+        glowPulse = Property(float, get_glow_pulse, set_glow_pulse)
+
+        def tick(self, dt_seconds=1.0 / 60.0):
+            self._time_s += dt_seconds
+            self.update()
+
+        def resizeEvent(self, event):
+            self._cached_size = (-1, -1)
+            self._bfly_agents = []
+            super().resizeEvent(event)
+
+        def _build_sigma_path(self):
+            current_size = (self.width(), self.height())
+            if current_size == self._cached_size and not self._cached_path.isEmpty():
+                return self._cached_path
+
+            font_px = max(64, int(min(self.width(), self.height()) * 0.45))
+
+            if not self._font_registered:
+                brygada_path = os.path.join(FONTS_DIR, "Brygada1918.ttf")
+                if os.path.exists(brygada_path):
+                    font_id = QFontDatabase.addApplicationFont(brygada_path)
+                    if font_id != -1:
+                        families = QFontDatabase.applicationFontFamilies(font_id)
+                        if families:
+                            self._sigma_font_family = families[0]
+                self._font_registered = True
+
+            font = QFont(self._sigma_font_family, font_px)
+            if not font.exactMatch():
+                font = QFont("Gentium Book Plus", font_px)
+                if not font.exactMatch():
+                    font = QFont("Times New Roman", font_px)
+            font.setBold(False)
+            font.setWeight(QFont.Weight.Light)
+            font.setStyleStrategy(QFont.StyleStrategy.PreferAntialias)
+
+            path = QPainterPath()
+            path.addText(0, 0, font, "Σ")
+
+            bounds = path.boundingRect()
+            cx = self.width() * 0.5
+            cy = self.height() * 0.5
+
+            transform = QTransform()
+            transform.translate(cx - (bounds.x() + bounds.width() * 0.5), cy - (bounds.y() + bounds.height() * 0.5))
+            centered_path = transform.map(path)
+
+            self._cached_path = centered_path
+            self._cached_size = current_size
+            return centered_path
+
+        def _draw_soft_haze(self, painter, center_x, center_y, radius, color, intensity):
+            haze = QRadialGradient(center_x, center_y, radius)
+            haze.setColorAt(0.0, QColor(color.red(), color.green(), color.blue(), min(255, int(86 * intensity))))
+            haze.setColorAt(0.55, QColor(color.red(), color.green(), color.blue(), min(255, int(42 * intensity))))
+            haze.setColorAt(1.0, QColor(color.red(), color.green(), color.blue(), 0))
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(haze)
+            painter.drawEllipse(int(center_x - radius), int(center_y - radius), int(radius * 2), int(radius * 2))
+
+        def _mix_point(self, p1, p2, t):
+            return (p1[0] + (p2[0] - p1[0]) * t, p1[1] + (p2[1] - p1[1]) * t)
+
+        def _draw_butterfly(self, painter, x, y, size, heading, wing_phase, fold=1.0):
+            """Draw a realistic butterfly. fold=0..1 controls wing openness (0=closed)."""
+            painter.save()
+            painter.translate(x, y)
+            painter.rotate(math.degrees(heading))
+            # Asymmetric flap: each wing half slightly different
+            raw_flap = math.sin(wing_phase)
+            flap_t = 0.18 + 0.82 * abs(raw_flap) * fold
+            flap_b = 0.18 + 0.82 * abs(math.sin(wing_phase + 0.22)) * fold
+            s = size
+            ws_t = s * 0.62 * flap_t
+            ws_b = s * 0.62 * flap_b
+            # Colors with depth
+            deep = QColor(38, 100, 220, 225)
+            mid = QColor(65, 148, 255, 210)
+            edge = QColor(120, 190, 255, 180)
+            hind_c = QColor(80, 160, 240, 170)
+            vein_pen = QPen(QColor(25, 65, 160, 110), max(0.5, s * 0.012))
+            painter.setPen(Qt.PenStyle.NoPen)
+            # --- Forewing top ---
+            painter.setBrush(mid)
+            fw_t = QPainterPath()
+            fw_t.moveTo(s * 0.06, 0)
+            fw_t.cubicTo(s * 0.42, -ws_t * 0.92, s * 0.22, -ws_t * 1.05, -s * 0.08, -ws_t * 0.72)
+            fw_t.cubicTo(-s * 0.22, -ws_t * 0.42, -s * 0.12, -ws_t * 0.08, s * 0.06, 0)
+            painter.drawPath(fw_t)
+            # Edge highlight top forewing
+            painter.setBrush(edge)
+            et = QPainterPath()
+            et.moveTo(s * 0.28, -ws_t * 0.65)
+            et.cubicTo(s * 0.18, -ws_t * 0.95, s * 0.02, -ws_t * 0.88, -s * 0.08, -ws_t * 0.72)
+            et.cubicTo(-s * 0.02, -ws_t * 0.82, s * 0.14, -ws_t * 0.78, s * 0.28, -ws_t * 0.65)
+            painter.drawPath(et)
+            # Spot on forewing top
+            painter.setBrush(deep)
+            painter.drawEllipse(int(s * 0.08), int(-ws_t * 0.48), max(1, int(s * 0.1)), max(1, int(ws_t * 0.18)))
+            # Vein on top forewing
+            painter.setPen(vein_pen)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            v1 = QPainterPath()
+            v1.moveTo(s * 0.06, 0)
+            v1.cubicTo(s * 0.15, -ws_t * 0.25, s * 0.22, -ws_t * 0.55, s * 0.08, -ws_t * 0.75)
+            painter.drawPath(v1)
+            painter.setPen(Qt.PenStyle.NoPen)
+            # --- Forewing bottom ---
+            painter.setBrush(mid)
+            fw_b = QPainterPath()
+            fw_b.moveTo(s * 0.06, 0)
+            fw_b.cubicTo(s * 0.42, ws_b * 0.92, s * 0.22, ws_b * 1.05, -s * 0.08, ws_b * 0.72)
+            fw_b.cubicTo(-s * 0.22, ws_b * 0.42, -s * 0.12, ws_b * 0.08, s * 0.06, 0)
+            painter.drawPath(fw_b)
+            painter.setBrush(edge)
+            eb = QPainterPath()
+            eb.moveTo(s * 0.28, ws_b * 0.65)
+            eb.cubicTo(s * 0.18, ws_b * 0.95, s * 0.02, ws_b * 0.88, -s * 0.08, ws_b * 0.72)
+            eb.cubicTo(-s * 0.02, ws_b * 0.82, s * 0.14, ws_b * 0.78, s * 0.28, ws_b * 0.65)
+            painter.drawPath(eb)
+            painter.setBrush(deep)
+            painter.drawEllipse(int(s * 0.08), int(ws_b * 0.32), max(1, int(s * 0.1)), max(1, int(ws_b * 0.18)))
+            painter.setPen(vein_pen)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            v2 = QPainterPath()
+            v2.moveTo(s * 0.06, 0)
+            v2.cubicTo(s * 0.15, ws_b * 0.25, s * 0.22, ws_b * 0.55, s * 0.08, ws_b * 0.75)
+            painter.drawPath(v2)
+            painter.setPen(Qt.PenStyle.NoPen)
+            # --- Hindwing top ---
+            painter.setBrush(hind_c)
+            hw_t = QPainterPath()
+            hw_t.moveTo(-s * 0.04, 0)
+            hw_t.cubicTo(-s * 0.12, -ws_t * 0.55, -s * 0.38, -ws_t * 0.72, -s * 0.34, -ws_t * 0.32)
+            hw_t.cubicTo(-s * 0.28, -ws_t * 0.10, -s * 0.08, 0, -s * 0.04, 0)
+            painter.drawPath(hw_t)
+            # --- Hindwing bottom ---
+            hw_b = QPainterPath()
+            hw_b.moveTo(-s * 0.04, 0)
+            hw_b.cubicTo(-s * 0.12, ws_b * 0.55, -s * 0.38, ws_b * 0.72, -s * 0.34, ws_b * 0.32)
+            hw_b.cubicTo(-s * 0.28, ws_b * 0.10, -s * 0.08, 0, -s * 0.04, 0)
+            painter.drawPath(hw_b)
+            # --- Body (thorax + abdomen) ---
+            body_c = QColor(22, 55, 130, 240)
+            painter.setBrush(body_c)
+            bw = max(1, s * 0.035)
+            painter.drawEllipse(int(-s * 0.16), int(-bw), int(s * 0.22), int(bw * 2))
+            painter.drawEllipse(int(s * 0.04), int(-bw * 0.7), int(s * 0.09), int(bw * 1.4))
+            # --- Antennae ---
+            ant_pen = QPen(QColor(30, 70, 160, 200), max(0.4, s * 0.008))
+            painter.setPen(ant_pen)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            a1 = QPainterPath()
+            a1.moveTo(s * 0.10, -bw * 0.3)
+            a1.cubicTo(s * 0.25, -s * 0.18, s * 0.32, -s * 0.22, s * 0.28, -s * 0.28)
+            painter.drawPath(a1)
+            a2 = QPainterPath()
+            a2.moveTo(s * 0.10, bw * 0.3)
+            a2.cubicTo(s * 0.25, s * 0.18, s * 0.32, s * 0.22, s * 0.28, s * 0.28)
+            painter.drawPath(a2)
+            # Antenna tips
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(40, 80, 180, 220))
+            tip = max(1, int(s * 0.022))
+            painter.drawEllipse(int(s * 0.28 - tip), int(-s * 0.28 - tip), tip * 2, tip * 2)
+            painter.drawEllipse(int(s * 0.28 - tip), int(s * 0.28 - tip), tip * 2, tip * 2)
+            painter.restore()
+
+        def paintEvent(self, event):
+            _ = event
+            painter = QPainter(self)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+            painter.setRenderHint(QPainter.RenderHint.TextAntialiasing, True)
+            painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+
+            painter.fillRect(self.rect(), QColor("#000000"))
+
+            if self._master_opacity <= 0.001:
+                return
+
+            sigma_path = self._build_sigma_path()
+            center_x = self.width() * 0.5
+            center_y = self.height() * 0.5
+            sigma_bounds = sigma_path.boundingRect()
+            sigma_safe_r = max(sigma_bounds.width(), sigma_bounds.height()) * 0.26
+            painter.setOpacity(self._master_opacity)
+
+            violet = QColor("#D14DFF")
+            cyan = QColor("#33F4FF")
+
+            # Orbite opposte: il moto resta vivo ma i layer sono sempre dietro al simbolo.
+            orbit_radius = min(self.width(), self.height()) * 0.36
+            theta = -math.pi / 4 + self._time_s * 0.42
+            p_v_orbit = (center_x + math.cos(theta) * orbit_radius, center_y + math.sin(theta) * orbit_radius)
+            p_c_orbit = (center_x + math.cos(theta + math.pi) * orbit_radius, center_y + math.sin(theta + math.pi) * orbit_radius)
+
+            # Partenza dagli angoli opposti con micro-variazioni "vive".
+            corner_v = (self.width() * 0.92, self.height() * 0.10)
+            corner_c = (self.width() * 0.08, self.height() * 0.90)
+            jitter_v = (
+                math.sin(self._time_s * 4.20) * (self.width() * 0.016),
+                math.cos(self._time_s * 3.60) * (self.height() * 0.013),
+            )
+            jitter_c = (
+                math.cos(self._time_s * 3.90) * (self.width() * 0.016),
+                math.sin(self._time_s * 4.30) * (self.height() * 0.013),
+            )
+
+            # Intro: dagli angoli si dirigono gradualmente dietro alla Sigma.
+            intro_t = min(1.0, max(0.0, self._time_s / 3.6))
+            intro = math.sin(intro_t * (math.pi * 0.5))
+
+            # Ciclo di convergenza dietro: si avvicinano ma non si fondono del tutto.
+            converge = (math.sin(self._time_s * 0.38 - math.pi / 2) + 1.0) * 0.5
+            sep = min(self.width(), self.height()) * 0.05
+            back_hub = (center_x, center_y)
+
+            p_v_back_target = self._mix_point(p_v_orbit, (back_hub[0] - sep, back_hub[1]), converge)
+            p_c_back_target = self._mix_point(p_c_orbit, (back_hub[0] + sep, back_hub[1]), converge)
+
+            p_v_start = (corner_v[0] + jitter_v[0], corner_v[1] + jitter_v[1])
+            p_c_start = (corner_c[0] + jitter_c[0], corner_c[1] + jitter_c[1])
+
+            p_v_back = self._mix_point(p_v_start, p_v_back_target, intro)
+            p_c_back = self._mix_point(p_c_start, p_c_back_target, intro)
+
+            self._draw_soft_haze(
+                painter,
+                p_v_back[0],
+                p_v_back[1],
+                min(self.width(), self.height()) * 0.47,
+                violet,
+                1.55,
+            )
+            self._draw_soft_haze(
+                painter,
+                p_c_back[0],
+                p_c_back[1],
+                min(self.width(), self.height()) * 0.44,
+                cyan,
+                1.55,
+            )
+
+            # ===== FARFALLE BLU — DO NOT TOUCH =====
+            # --- Farfalle blu: calcola posizioni ---
+            bfly_draws = []  # (bx, by, size, heading, wing_phase, behind_sigma)
+            t = self._time_s
+            w, h = self.width(), self.height()
+            base_size = min(w, h) * 0.04
+            dim = min(w, h)
+
+            # Timestep
+            dt = t - self._bfly_last_sim_t
+            if dt <= 0.0 or dt > 0.12:
+                dt = 1.0 / 60.0
+            self._bfly_last_sim_t = t
+
+            # Spawn agents once
+            if len(self._bfly_agents) != 6:
+                self._bfly_agents = []
+                for i in range(6):
+                    seed = self._bfly_seeds[i]
+                    # Start just off the bottom-right corner
+                    sx = w * 0.95 + (i % 3) * base_size * 1.2
+                    sy = h * 0.95 + (i // 3) * base_size * 1.5
+                    # Each butterfly is truly unique — different radius, speed, vertical range
+                    _profiles = [
+                        # (orbit_r, orbit_spd, cruise, vert_amp, vert_freq)
+                        (0.12, 0.72, 0.18, 0.07, 0.45),   # 0: wide, swoops up/down
+                        (0.07, 0.95, 0.20, 0.04, 0.62),   # 1: close fast flutterer
+                        (0.14, 0.58, 0.16, 0.09, 0.33),   # 2: far, big vertical range
+                        (0.09, 0.82, 0.19, 0.05, 0.55),   # 3: medium lively
+                        (0.11, 0.65, 0.17, 0.08, 0.40),   # 4: medium swooper
+                        (0.06, 1.05, 0.21, 0.03, 0.70),   # 5: tight quick flutterer
+                    ]
+                    prof = _profiles[i]
+                    orbit_r = dim * prof[0]
+                    orbit_speed = prof[1]
+                    orbit_phase = seed * 1.3 + i * 1.047
+                    cruise = dim * prof[2]
+                    vert_amp = dim * prof[3]  # vertical bobbing amplitude
+                    vert_freq = prof[4]       # vertical bobbing speed
+                    self._bfly_agents.append({
+                        "x": sx, "y": sy,
+                        "vx": 0.0, "vy": 0.0,
+                        "heading": math.atan2(center_y - sy, center_x - sx),
+                        "orbit_r": orbit_r,
+                        "orbit_speed": orbit_speed,
+                        "orbit_phase": orbit_phase,
+                        "cruise": cruise,
+                        "vert_amp": vert_amp,
+                        "vert_freq": vert_freq,
+                    })
+
+            # How far along the approach is (0→flying in, 1→arrived at center)
+            # Quick arrival — ~1.2 seconds to reach the symbol
+            arrive_t = min(1.0, t / 1.2)
+            arrive = arrive_t * arrive_t * (3.0 - 2.0 * arrive_t)  # smoothstep
+
+            for i, agent in enumerate(self._bfly_agents):
+                seed = self._bfly_seeds[i]
+                sz_scale = self._bfly_sizes[i]
+                bfly_size = base_size * sz_scale
+
+                # --- Target position: lively flutter around/above/below symbol ---
+                ang = agent["orbit_phase"] + t * agent["orbit_speed"]
+                r_base = agent["orbit_r"]
+
+                # Elliptical path with randomized wobble per butterfly
+                rx = r_base * (1.0 + 0.18 * math.sin(t * 0.7 + seed * 2.1))
+                ry = r_base * (0.85 + 0.15 * math.cos(t * 0.55 + seed * 1.7))
+                orbit_x = center_x + math.cos(ang) * rx
+                orbit_y = center_y + math.sin(ang) * ry
+                # Vertical bobbing — fly above and below the symbol
+                orbit_y += math.sin(t * agent["vert_freq"] * 6.28 + seed * 4.0) * agent["vert_amp"]
+                # Small horizontal flutter on top of orbit
+                orbit_x += math.sin(t * 1.8 + seed * 5.5) * r_base * 0.12
+
+                # Start position (just off bottom-right corner)
+                sx = w * 0.95 + (i % 3) * base_size * 1.2
+                sy = h * 0.95 + (i // 3) * base_size * 1.5
+
+                # Blend from start to orbit based on arrival progress
+                # Each butterfly arrives slightly staggered
+                my_arrive = min(1.0, max(0.0, (arrive - i * 0.03) / max(0.01, 1.0 - i * 0.03)))
+                my_arrive = my_arrive * my_arrive * (3.0 - 2.0 * my_arrive)
+                target_x = sx + (orbit_x - sx) * my_arrive
+                target_y = sy + (orbit_y - sy) * my_arrive
+
+                # --- Steering: smooth turn toward target ---
+                dx = target_x - agent["x"]
+                dy = target_y - agent["y"]
+                dist = math.hypot(dx, dy)
+
+                # Desired heading toward target
+                if dist > 0.5:
+                    desired_heading = math.atan2(dy, dx)
+                else:
+                    desired_heading = agent["heading"]
+
+                # Gentle but responsive turning
+                max_turn = 4.0  # radians/sec — responsive but not twitchy
+                hdiff = desired_heading - agent["heading"]
+                hdiff = (hdiff + math.pi) % (2.0 * math.pi) - math.pi
+                turn = max(-max_turn * dt, min(max_turn * dt, hdiff))
+                agent["heading"] += turn
+
+                # Soft flutter jitter — natural wobble in flight path
+                jitter_freq = 3.5 + seed * 0.6
+                jitter_amp = 0.22 + 0.10 * math.sin(t * 0.6 + seed * 2.0)
+                agent["heading"] += math.sin(t * jitter_freq + seed * 7.3) * jitter_amp * dt * 3.0
+
+                # --- Speed: lively cruise, each butterfly different ---
+                cruise = agent["cruise"]
+                if my_arrive < 0.95:
+                    speed = cruise * (1.6 + 0.5 * (1.0 - my_arrive))
+                else:
+                    speed = cruise
+                # Natural speed variation — slight bursts and eases
+                speed *= 1.0 + 0.10 * math.sin(t * 2.2 + seed * 3.7) + 0.04 * math.sin(t * 5.0 + seed)
+
+                # Velocity from heading + speed
+                agent["vx"] = math.cos(agent["heading"]) * speed
+                agent["vy"] = math.sin(agent["heading"]) * speed
+
+                # Move
+                agent["x"] += agent["vx"] * dt
+                agent["y"] += agent["vy"] * dt
+
+                # --- Separation: keep them spread apart, not clumped ---
+                for j, other in enumerate(self._bfly_agents):
+                    if j == i:
+                        continue
+                    ox = agent["x"] - other["x"]
+                    oy = agent["y"] - other["y"]
+                    od = math.hypot(ox, oy)
+                    sep_dist = bfly_size * 4.5  # larger separation = more spread out
+                    if 0.1 < od < sep_dist:
+                        push = (1.0 - od / sep_dist) * dim * 0.22 * dt
+                        agent["x"] += (ox / od) * push
+                        agent["y"] += (oy / od) * push
+
+                # --- Depth layering (behind/in-front of sigma) ---
+                behind = math.sin(ang + seed) > 0.1
+
+                # Wing flutter: lively and natural — visible flapping
+                wing_phase = t * (7.0 + seed * 1.0 + 1.0 * math.sin(t * 1.2 + seed)) + seed * 5.0
+                bfly_draws.append((
+                    agent["x"], agent["y"], bfly_size,
+                    agent["heading"], wing_phase, behind
+                ))
+
+            # Draw butterflies behind sigma first
+            for bx, by, bs, bh, wp, behind in bfly_draws:
+                if behind:
+                    self._draw_butterfly(painter, bx, by, bs, bh, wp)
+
+            # Draw sigma on top
+            core = QColor("#FFFFFF")
+            core.setAlpha(255)
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(core)
+            painter.drawPath(sigma_path)
+
+            highlight_pen = QPen(
+                QColor(255, 255, 255, 235),
+                0.8,
+                Qt.PenStyle.SolidLine,
+                Qt.PenCapStyle.RoundCap,
+                Qt.PenJoinStyle.RoundJoin,
+            )
+            painter.setPen(highlight_pen)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.drawPath(sigma_path)
+
+            # Draw butterflies in front of sigma
+            for bx, by, bs, bh, wp, behind in bfly_draws:
+                if not behind:
+                    self._draw_butterfly(painter, bx, by, bs, bh, wp)
+            # ===== FINE FARFALLE BLU — DO NOT TOUCH =====
+
+    class SplashScreen(QWidget):
+        """Splash cyberpunk: fade in (3.2s), hold (3.2s), fade out (3.2s)."""
+
+        splashFinished = Signal()
+
+        def __init__(self):
+            super().__init__()
+            self.setWindowTitle("Neon Splash")
+            self.setStyleSheet("background-color: #000000;")
+            self.setWindowFlags(Qt.WindowType.Window | Qt.WindowType.FramelessWindowHint)
+
+            self.canvas = NeonSigmaWidget(self)
+            layout = QVBoxLayout(self)
+            layout.setContentsMargins(0, 0, 0, 0)
+            layout.addWidget(self.canvas)
+
+            screen = QApplication.primaryScreen()
+            if screen:
+                self.setGeometry(screen.availableGeometry())
+            else:
+                self.resize(1280, 720)
+
+            self.frame_timer = QTimer(self)
+            self.frame_timer.setTimerType(Qt.TimerType.PreciseTimer)
+            self.frame_timer.setInterval(16)
+            self.frame_timer.timeout.connect(self.canvas.tick)
+
+            self.timeline = QSequentialAnimationGroup(self)
+
+            fade_in = QPropertyAnimation(self.canvas, b"masterOpacity", self)
+            fade_in.setStartValue(0.0)
+            fade_in.setEndValue(1.0)
+            fade_in.setDuration(3200)
+            fade_in.setEasingCurve(QEasingCurve.Type.InOutCubic)
+
+            hold = QPauseAnimation(3200, self)
+
+            fade_out = QPropertyAnimation(self.canvas, b"masterOpacity", self)
+            fade_out.setStartValue(1.0)
+            fade_out.setEndValue(0.0)
+            fade_out.setDuration(3200)
+            fade_out.setEasingCurve(QEasingCurve.Type.InOutCubic)
+
+            self.timeline.addAnimation(fade_in)
+            self.timeline.addAnimation(hold)
+            self.timeline.addAnimation(fade_out)
+            self.timeline.finished.connect(self._on_timeline_finished)
+
+        def start(self):
+            self.canvas.set_master_opacity(0.0)
+            self.frame_timer.start()
+            self.timeline.start()
+
+        def _on_timeline_finished(self):
+            self.frame_timer.stop()
+            self.splashFinished.emit()
+
+    return QApplication, SplashScreen
+
+
+def _run_with_splash_bootstrap():
+    # Se esplicitamente richiesto dall'ambiente, salta la splash.
+    if os.getenv("RAYNEO_SKIP_SPLASH") == "1":
+        _prepare_startup_assets(True)
+        _run_main_app()
+        return
+
+    try:
+        QApplication, SplashScreen = _build_qt_splash_classes()
+    except Exception as exc:
+        logger.warning("Splash non disponibile (%s). Avvio diretto.", exc)
+        # In fallback senza splash, abilita ora i download rete prima dell'avvio app.
+        _prepare_startup_assets(True)
+        _run_main_app()
+        return
+
+    qt_app = QApplication.instance() or QApplication(sys.argv)
+    splash = SplashScreen()
+
+    def _on_splash_finished():
+        splash.close()
+        qt_app.quit()
+
+    splash.splashFinished.connect(_on_splash_finished)
+    splash.show()
+    splash.start()
+    qt_app.exec()
+
+    # Dopo la splash resta nello stesso processo e mostra subito la UI principale.
+    _prepare_startup_assets(True)
+    _run_main_app()
+
+
+if __name__ == '__main__':
+    _run_with_splash_bootstrap()
