@@ -36,7 +36,7 @@ except Exception as _shazam_import_exc:
     Shazam = None
     SHAZAM_IMPORT_ERROR = _shazam_import_exc
 
-GROQ_API_KEY      = os.getenv("GROQ_API_KEY", "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")
+GROQ_API_KEY      = os.getenv("GROQ_API_KEY", "")
 ACR_ACCESS_KEY    = os.getenv("ACR_ACCESS_KEY", "")
 ACR_ACCESS_SECRET = os.getenv("ACR_ACCESS_SECRET", "")
 ACR_HOST          = os.getenv("ACR_HOST", "identify-eu-west-1.acrcloud.com")
@@ -142,7 +142,7 @@ HTTP_RETRY = Retry(
     status_forcelist=(429, 500, 502, 503, 504),
     allowed_methods=frozenset(["GET", "HEAD", "OPTIONS"]),
 )
-HTTP_ADAPTER = HTTPAdapter(max_retries=HTTP_RETRY, pool_connections=16, pool_maxsize=16)
+HTTP_ADAPTER = HTTPAdapter(max_retries=HTTP_RETRY, pool_connections=16, pool_maxsize=16)  # pyright: ignore[reportArgumentType]
 HTTP_SESSION.mount("https://", HTTP_ADAPTER)
 HTTP_SESSION.mount("http://", HTTP_ADAPTER)
 
